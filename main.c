@@ -1,56 +1,161 @@
-#include <stdio.h>
+#include <stdio.h>           
 #define GLT_CHESS_IMPLEMENTATION 1 
-#include "glt_chess.h"
+#include "glt_chess.h"       
+                             
+#include "raylib.h"          
+                             
+typedef struct {             
+        glt_chess_board board;
+                             
+        Texture2D textures[13]; //leave the first one empty
 
-static void print_board(glt_chess_board board)
-{
-        printf("\n");
-        for (int i = 63; i >= 0; i)
-        {
-                for (size_t j = 0; j < 8; j++)
-                {
-                        printf("%c ", glt_get_fen_char(board.pieces[(i-7) + j]));
-                }
-                i -= 8;
-                printf("\n");
-        }
-        printf("\n");
+        glt_move* possible_moves;
+}GameState;                  
+                             
+const int screen_width = 1000;
+const int screen_height = 800;
+                             
+static GameState game_state; 
+                             
+static void initialize_textures(void){
+        game_state.textures[GLT_white_pawn  ]    = LoadTexture("./data/1_white_pawn.png");  
+        game_state.textures[GLT_white_king  ]    = LoadTexture("./data/2_white_king.png");  
+        game_state.textures[GLT_white_queen ]    = LoadTexture("./data/3_white_queen.png");  
+        game_state.textures[GLT_white_rook  ]    = LoadTexture("./data/4_white_rook.png");  
+        game_state.textures[GLT_white_bishop]    = LoadTexture("./data/5_white_bishop.png");  
+        game_state.textures[GLT_white_knight]    = LoadTexture("./data/6_white_knight.png");  
+        game_state.textures[GLT_black_pawn  ]    = LoadTexture("./data/7_black_pawn.png");  
+        game_state.textures[GLT_black_king  ]    = LoadTexture("./data/8_black_king.png");  
+        game_state.textures[GLT_black_queen ]   = LoadTexture("./data/9_black_queen.png");  
+        game_state.textures[GLT_black_rook  ]   = LoadTexture("./data/10_black_rook.png");  
+        game_state.textures[GLT_black_bishop]   = LoadTexture("./data/11_black_bishop.png");  
+        game_state.textures[GLT_black_knight]   = LoadTexture("./data/12_black_knight.png");  
 }
 
-static void print_moves(glt_move* moves){
-        glt_move* curr = moves;
+void draw_current_board(void){
+        for (size_t i = 0; i < 64; i++)
+        {
+                glt_pos pos = glt_index_to_pos(i);
+
+                if ((pos.x + pos.y) % 2 != 0) {
+                        DrawRectangle(pos.x * 75, pos.y * 75, 75, 75, GRAY);
+                } else {
+                        DrawRectangle(pos.x * 75, pos.y * 75, 75, 75, WHITE);
+                }
+
+        }
+        for (size_t i = 0; i < 64; i++){
+                glt_pos pos = glt_index_to_pos(i);
+                glt_piece curr_piece = game_state.board.pieces[glt_pos_to_index(pos)];
+
+                if (curr_piece != GLT_none)
+                {
+                        DrawTexture(game_state.textures[curr_piece],   (pos.x) * 75 + 5,   (9 - pos.y) * 75 + 7, WHITE);
+                }
+
+
+        }
+
+        //display possible moves
+
+        glt_move* curr = game_state.possible_moves;
+
         while(curr){
-                glt_coord cord = glt_pos_to_coord(curr->end);
-                printf("{%c, %d}", cord.file,  cord.rank);
+                DrawCircle(curr->end.x * 75 + 40, 37 + (9 - curr->end.y) * 75 , 15, BEIGE);
                 curr = curr->next;
         }
+        
 }
 
-int main(int argc, char const *argv[])
+glt_pos get_curr_mouse_pos(){
+        Vector2 mouse_pos = GetMousePosition();
+
+        glt_pos ret;
+
+        if(mouse_pos.x < 0){
+                ret.x = -1;
+                ret.y = -1;
+                return ret;
+        }
+
+        if(mouse_pos.x >  9 * 75){
+                ret.x = -1;
+                ret.y = -1;
+                return ret;
+        }
+        if(mouse_pos.y >  9 * 75){
+                ret.x = -1;
+                ret.y = -1;
+                return ret;
+        }
+
+        ret.x = mouse_pos.x / 75.0f;
+        ret.y = mouse_pos.y / 75.0f;
+        ret.y = 9 - ret.y;
+        printf("%d, %d\n", ret.x, ret.y);
+        return ret;
+}
+
+void update_game(){
+        glt_pos pos = get_curr_mouse_pos();
+
+        if(game_state.possible_moves){
+                i8 made_move = 0;
+
+                glt_move*  curr = game_state.possible_moves;
+                while(curr){
+
+                        if(glt_pos_is_equal(pos, curr->end)){
+                                if(glt_make_move(&game_state.board, *curr) == 1){
+                                        made_move = 1;
+                                }
+                        }
+                        curr = curr->next;
+                }
+
+                glt_moves_delte(&game_state.possible_moves);
+        }else{
+                glt_moves_delte(&game_state.possible_moves);
+                game_state.possible_moves = glt_generate_moves(&game_state.board, pos);
+        }
+
+}
+
+int main(void)
 {
-        glt_chess_board board;
-        glt_initilize_board(&board);
-        print_board(board);
 
-        /*
-        glt_coord cord = {'A', 2};
-        glt_move* moves =   glt_generate_moves(&board, glt_coord_to_pos(cord));
-        print_moves(moves);
-        glt_make_move(&board, *moves);
-        print_board(board);
-        */
+        glt_initilize_board(&game_state.board);
 
-        glt_coord cord = {'B', 2};
-        glt_move* moves = glt_generate_moves(&board, glt_coord_to_pos(cord));
-        print_moves(moves);
-        glt_make_move(&board, *moves);
-        print_board(board);
 
-        cord.file = 'C';
-        cord.rank = 1;
-        moves = glt_generate_moves(&board, glt_coord_to_pos(cord));
-        print_moves(moves);
-        glt_make_move(&board, *moves);
-        print_board(board);
+        InitWindow(screen_width, screen_height, "Atlas chess");
+
+        SetTargetFPS(60);
+        initialize_textures();
+
+        Camera2D camera;
+        camera.zoom = 1.0f;
+        camera.target.x = screen_width/2, 
+        camera.target.y = screen_height/2;
+        camera.offset.x  = screen_width/2;
+        camera.offset.y  = screen_height/2;
+
+        
+        //camera.rotation = 90.0f;
+        while(!WindowShouldClose())
+        {
+                  if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                        update_game();
+                  }
+                  BeginDrawing();
+                  ClearBackground(GRAY);
+                  // DrawText("Hello world", 190, 200, 20, LIGHTGRAY);
+                  BeginMode2D(camera);
+                  // DrawRectangle(screen_width/2 , screen_height/2 , 75, 75,
+                  // WHITE);
+                  draw_current_board();
+                  EndMode2D();
+                  EndDrawing();
+        }
+        CloseWindow();
         return 0;
 }
