@@ -1,12 +1,5 @@
-The goal is to create a chess engine with AI capabilities and put it inside esp32 with screen.
+the engine is fully written in glt_chess.h 
 
-
-ROADMAP
-
-create a basic chess engine in c with raylib
--> support making only legal moves
--> read chess database files and show it
--> show possible moves 
 
 create chess ai model that fits inside esp32 
 create ui for esp32 using lvgl
