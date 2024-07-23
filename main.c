@@ -10,6 +10,10 @@ typedef struct {
         Texture2D textures[13]; //leave the first one empty
 
         glt_move* possible_moves;
+
+        Font font;
+
+        char fen[100]; //current board's fen
 }GameState;                  
                              
 const int screen_width = 1000;
@@ -32,7 +36,8 @@ static void initialize_textures(void){
         game_state.textures[GLT_black_knight]   = LoadTexture("./data/12_black_knight.png");  
 }
 
-void draw_current_board(void){
+void draw_current_board(void)
+{
         for (size_t i = 0; i < 64; i++)
         {
                 glt_pos pos = glt_index_to_pos(i);
@@ -92,7 +97,7 @@ glt_pos get_curr_mouse_pos(){
         ret.x = mouse_pos.x / 75.0f;
         ret.y = mouse_pos.y / 75.0f;
         ret.y = 9 - ret.y;
-        printf("%d, %d\n", ret.x, ret.y);
+        //printf("%d, %d\n", ret.x, ret.y);
         return ret;
 }
 
@@ -108,6 +113,7 @@ void update_game(){
                         if(glt_pos_is_equal(pos, curr->end)){
                                 if(glt_make_move(&game_state.board, *curr) == 1){
                                         made_move = 1;
+                                        glt_get_fen_from_board(&game_state.board, game_state.fen, 100);
                                 }
                         }
                         curr = curr->next;
@@ -119,13 +125,22 @@ void update_game(){
                 game_state.possible_moves = glt_generate_moves(&game_state.board, pos);
         }
 
+        printf("%s\n", game_state.fen);
+
 }
+
+void DrawTextB(const char *text, int posX, int posY, int fontSize, Color color)
+{
+    DrawTextEx(game_state.font, text, (Vector2){ posX, posY }, fontSize, 1, color);
+}
+
 
 int main(void)
 {
 
         glt_initilize_board(&game_state.board);
 
+        glt_get_fen_from_board(&game_state.board, game_state.fen, 100);
 
         InitWindow(screen_width, screen_height, "Atlas chess");
 
@@ -139,6 +154,7 @@ int main(void)
         camera.offset.x  = screen_width/2;
         camera.offset.y  = screen_height/2;
 
+        game_state.font = LoadFontEx("c:/Windows/Fonts/Consola.ttf", 17, NULL, 0);
         
         //camera.rotation = 90.0f;
         while(!WindowShouldClose())
@@ -153,8 +169,13 @@ int main(void)
                   // DrawRectangle(screen_width/2 , screen_height/2 , 75, 75,
                   // WHITE);
                   draw_current_board();
+
+                  // Draw fen
+
+                  DrawTextB(game_state.fen, 50, 700, 17, BLACK);       // Draw text (using default font)
                   EndMode2D();
                   EndDrawing();
+
         }
         CloseWindow();
         return 0;
