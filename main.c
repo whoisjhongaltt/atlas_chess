@@ -139,7 +139,6 @@ int main(void)
 {
 
         glt_initilize_board(&game_state.board);
-
         glt_get_fen_from_board(&game_state.board, game_state.fen, 100);
 
         InitWindow(screen_width, screen_height, "Atlas chess");
@@ -170,9 +169,8 @@ int main(void)
                   // WHITE);
                   draw_current_board();
 
-                  // Draw fen
+                  DrawTextB(game_state.fen, 50, 700, 17, BLACK); 
 
-                  DrawTextB(game_state.fen, 50, 700, 17, BLACK);       // Draw text (using default font)
                   EndMode2D();
                   EndDrawing();
 
